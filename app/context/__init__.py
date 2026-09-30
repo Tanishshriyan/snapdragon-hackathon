@@ -1,0 +1,2 @@
+"""Current-work context aggregation."""
+

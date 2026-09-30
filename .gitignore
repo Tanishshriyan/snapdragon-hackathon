@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/doppel.db
+data/logs/
+.env
+.vscode/
+.idea/
+build/
+dist/
+*.spec
+*.egg-info/
+
