@@ -33,6 +33,6 @@ class ResumeEngine:
         project = context.session.project_context or "the last project context"
         return WorkspacePreparation(
             True,
-            f"Workspace plan ready for {app} ({project}). Automatic application launch is not enabled in Phase 1.",
+            f"Workspace plan ready for {app} ({project}). Launch registered applications from Settings when enabled.",
         )
 

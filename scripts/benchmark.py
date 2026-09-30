@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 
 from app.ai.onnx_runtime import OnnxModelRunner, detect_runtime
 from app.benchmark.runner import BenchmarkRunner, results_to_json

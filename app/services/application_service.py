@@ -22,6 +22,12 @@ from app.database.repositories import (
     TaskRepository,
     WorkflowRepository,
 )
+from app.ai.local_reasoning import build_reasoner
+from app.memory.embeddings import EmbeddingConfig, LocalTextEmbedder
+from app.memory.semantic_memory import SemanticMemory
+from app.memory.semantic_repository import SemanticMemoryRepository
+from app.resume.launcher import LaunchTarget, WorkspaceLauncher
+from app.workflow.learned_model import LearnedWorkflowModel
 from app.memory.memory_manager import MemoryManager
 from app.memory.session_memory import SessionMemoryStore
 from app.monitoring.filesystem_monitor import FilesystemMonitor
@@ -50,6 +56,18 @@ class ApplicationService:
 
         self.task_repository = TaskRepository(self.session_factory)
         self.plan_repository = PlanRepository(self.session_factory)
+        self.semantic_memory = SemanticMemory(
+            SemanticMemoryRepository(self.session_factory),
+            LocalTextEmbedder(EmbeddingConfig(self.settings.embedding_dimensions)),
+        )
+        self.reasoner = build_reasoner(self.settings.local_model_path)
+        self.learned_workflow_model = LearnedWorkflowModel()
+        targets = [
+            LaunchTarget(name, values[0], tuple(values[1:]))
+            for name, values in self.settings.launchable_applications.items()
+            if values
+        ]
+        self.workspace_launcher = WorkspaceLauncher(targets)
         self.activity_repository = ActivityRepository(self.session_factory)
         self.session_repository = SessionRepository(self.session_factory)
         self.context_repository = ContextRepository(self.session_factory)
@@ -109,6 +127,7 @@ class ApplicationService:
         if observation:
             self.record_observation(observation)
         self.session_monitor.tick(now)
+        self.learned_workflow_model.fit(self.activity_repository.recent(500))
 
     def record_observation(self, observation: ActivityObservation) -> None:
         self.activity_repository.add_observation(observation)
@@ -156,6 +175,33 @@ class ApplicationService:
             task_title = task.title if task else None
         return self.resume_engine.load_resume_context(task_title)
 
+    def remember_memory(
+        self,
+        text: str,
+        memory_type: str = "note",
+        metadata: dict[str, object] | None = None,
+    ) -> object:
+        return self.semantic_memory.remember(text, memory_type, metadata or {})
+
+    def search_memory(self, query: str, limit: int = 5) -> list:
+        return self.semantic_memory.search(query, limit=limit)
+
+    def explain_current_context(self) -> object:
+        context = self.context_engine.current or self.context_engine.refresh(persist=False)
+        memories = [hit.memory.text for hit in self.semantic_memory.search(context.summary, limit=3)]
+        return self.reasoner.explain(context, memories)
+
+    def register_launch_target(self, target: LaunchTarget) -> None:
+        self.workspace_launcher.register(target)
+
+    def prepare_workspace(self, launch: bool = False, dry_run: bool = False) -> object:
+        context = self.resume_context()
+        preparation = self.resume_engine.prepare_workspace(context)
+        if not launch or context.session is None:
+            return preparation
+        application = context.session.primary_application
+        if not application:
+            return preparation
     def shutdown(self) -> None:
         """Stop observers, close active session, and release SQLite resources."""
 

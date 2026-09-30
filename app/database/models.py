@@ -140,3 +140,17 @@ class ContextSnapshot(Base):
     last_activity: Mapped[str | None] = mapped_column(String(300), nullable=True)
     summary: Mapped[str] = mapped_column(Text, default="")
     current_task: Mapped[Task | None] = relationship()
+
+
+class MemoryEntry(Base):
+    """Local semantic-memory item with a serialized embedding vector."""
+
+    __tablename__ = "memory_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    memory_type: Mapped[str] = mapped_column(String(40), default="note", index=True)
+    text: Mapped[str] = mapped_column(Text)
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    embedding_json: Mapped[str] = mapped_column(Text, default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

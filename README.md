@@ -88,22 +88,37 @@ python -m pytest -q
 python -c "import PySide6; import app.main; print('UI imports ok')"
 ```
 
-## What is not implemented yet
+## Intelligence MVP
 
-- Local embeddings or semantic memory.
-- Local SLM/LLM reasoning.
-- ONNX Runtime integration.
-- QNN or Qualcomm AI Runtime integration.
-- Snapdragon NPU execution.
-- CPU versus NPU benchmarks, latency measurements, resource measurements, or
-  power-efficiency claims.
-- Automatic launching or restoration of arbitrary applications.
-- Advanced machine-learning workflow models.
-- Cloud APIs or cloud synchronization.
+- Local feature-hash embeddings and SQLite semantic memory are available with
+  no network service or model download.
+- Optional local GGUF reasoning is supported through `llama-cpp-python`, with
+  a deterministic local demo reasoner when no model is configured.
+- ONNX Runtime CPU/QNN provider detection and model execution are available
+  through the optional runtime adapter.
+- The benchmark command reports latency, process CPU time, and RSS deltas.
+- Resume launching is explicit and allowlisted; it never launches arbitrary
+  observed process names.
+- Workflow prediction now includes a learned Markov transition model.
+- Cloud APIs and cloud synchronization are intentionally not used.
 
-The current context, workflow, and prediction logic is explicitly a
-deterministic/rule-based baseline. It does not make AI or Snapdragon
-acceleration claims.
+The default MVP path is fully local and remains usable without optional AI
+packages or accelerator hardware.
+
+## Hardware/runtime limits
+
+- CPU inference is the guaranteed path in the base environment.
+- QNN requires an installed ONNX Runtime QNN package and compatible Qualcomm
+  runtime libraries; the app reports when `QNNExecutionProvider` is absent.
+- NPU execution requires a compatible Snapdragon device and a QNN HTP backend;
+  it is not simulated when unavailable.
+- Power efficiency is not inferred from latency. The benchmark explicitly
+  reports that no wattmeter or platform power telemetry is configured.
+- ONNX models used with QNN must satisfy the provider's shape, operator, and
+  quantization requirements.
+
+The application continues with CPU and deterministic fallbacks whenever an
+optional runtime or model is unavailable.
 
 ## Privacy
 

@@ -30,6 +30,10 @@ class Settings:
     monitored_directories: tuple[Path, ...] = ()
     store_window_titles: bool = True
     store_file_paths: bool = True
+    local_model_path: Path | None = None
+    inference_backend: str = "cpu"
+    embedding_dimensions: int = 256
+    launchable_applications: dict[str, tuple[str, ...]] = field(default_factory=dict)
     prediction_enabled: bool = True
     automatic_workspace_preparation: bool = False
 
@@ -44,6 +48,18 @@ class Settings:
         """Load optional path/runtime overrides without requiring dotenv."""
 
         settings = cls()
+        model_path = os.getenv("DOPPEL_LOCAL_MODEL_PATH")
+        if model_path:
+            settings.local_model_path = Path(model_path).expanduser()
+        backend = os.getenv("DOPPEL_INFERENCE_BACKEND")
+        if backend and backend.casefold() in {"cpu", "qnn", "npu"}:
+            settings.inference_backend = backend.casefold()
+        dimensions = os.getenv("DOPPEL_EMBEDDING_DIMENSIONS")
+        if dimensions:
+            try:
+                settings.embedding_dimensions = max(32, int(dimensions))
+            except ValueError:
+                pass
         database_path = os.getenv("DOPPEL_DATABASE_PATH")
         if database_path:
             settings.database_path = Path(database_path).expanduser()

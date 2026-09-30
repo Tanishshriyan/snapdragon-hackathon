@@ -58,6 +58,10 @@ class Dashboard(QWidget):
         self.context_label.setWordWrap(True)
         self.layout.addWidget(self._section_label("Current Context"))
         self.layout.addWidget(self.context_label)
+        self.layout.addWidget(self._section_label("Local reasoning"))
+        self.reasoning_label = QLabel()
+        self.reasoning_label.setObjectName("contextCard")
+        self.reasoning_label.setWordWrap(True)
 
         self.layout.addWidget(self._section_label("Predicted Next Action"))
         self.prediction_host = QVBoxLayout()
@@ -103,6 +107,8 @@ class Dashboard(QWidget):
         else:
             self.resume_label.setText("Your first saved work session will appear here.")
         context = self.service.context_engine.current
+        reasoning = self.service.explain_current_context()
+        self.reasoning_label.setText(f"{reasoning.text}\n\nProvider: {reasoning.provider}")
         self.context_label.setText(context.summary if context else "No active context observed yet.")
 
         while self.prediction_host.count():
@@ -127,5 +133,5 @@ class Dashboard(QWidget):
     def _prepare_workspace(self) -> None:
         from PySide6.QtWidgets import QMessageBox
 
-        result = self.service.resume_engine.prepare_workspace(self.service.resume_context())
+        result = self.service.prepare_workspace(launch=self.service.settings.automatic_workspace_preparation)
         QMessageBox.information(self, "Workspace preparation", result.message)
